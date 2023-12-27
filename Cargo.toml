@@ -6,11 +6,13 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-hal = { package = "esp32-hal", version = "0.17.0", features = ["xtal-40mhz"] }
+hal = { package = "esp32-hal", version = "0.16.0", features = ["xtal-40mhz"] }
 esp-backtrace = { version = "0.9.0", features = ["esp32", "panic-handler", "exception-handler", "print-uart"] }
 esp-println = { version = "0.8.0", features = ["esp32"] }
 
-#esp-wifi = { version= "0.1.0", features = ["esp32"]}
+ds18b20 = "0.1.1"
+esp-wifi = { version= "0.1.1", features = ["esp32"]}
+# This seems to be related to esp32-hal version 0.17 as with 0.16 there is not problem
 # Without this project can be build, but if included will get error:
 #
 # error: One of the feature flags must be provided: xtal-26mhz, xtal-40mhz, 
@@ -25,3 +27,9 @@ esp-println = { version = "0.8.0", features = ["esp32"] }
 #     = note: this error originates in the macro `assert_used_features` which comes from the expansion of the macro `assert_unique_used_features` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 
+[profile.release]
+# Explicitly disable LTO which the Xtensa codegen backend has issues
+lto = "off"
+opt-level = 3
+[profile.dev]
+lto = "off"
