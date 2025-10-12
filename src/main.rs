@@ -2,8 +2,8 @@
 #![no_main]
 
 use esp_backtrace as _;
-use esp_println::println;
 use esp_hal::{delay::Delay, peripherals, prelude::*, rng::Rng};
+use esp_println::println;
 
 #[entry]
 fn main() -> ! {
