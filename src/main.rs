@@ -3,21 +3,17 @@
 
 use esp_backtrace as _;
 use esp_println::println;
-use hal::{clock::ClockControl, peripherals::Peripherals, prelude::*, Delay, Rng, xtensa_lx::get_processor_id };
+use esp_hal::{delay::Delay, peripherals, prelude::*, rng::Rng};
 
 #[entry]
 fn main() -> ! {
-    let peripherals = Peripherals::take();
-    let system = peripherals.SYSTEM.split();
+    let peripherals = unsafe { peripherals::Peripherals::steal() };
+    let delay = Delay::new();
     let mut rng = Rng::new(peripherals.RNG);
-    // let random = rng.random();
 
-    let clocks = ClockControl::max(system.clock_control).freeze();
-    let mut delay = Delay::new(&clocks);
-    println!("Chip id: {:?}", get_processor_id());
+    println!("ESP32-C6 DevKitC-1 Started");
     loop {
-        println!("Random number generated: {:?}", rng.random());
-        // println!("Loop...");
-        delay.delay_ms(500u32);
+        println!("Random number generated: {}", rng.random());
+        delay.delay_millis(500);
     }
 }
