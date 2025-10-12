@@ -1,15 +1,12 @@
-[target.xtensa-esp32-none-elf]
+[target.riscv32imac-unknown-none-elf]
 runner = "espflash flash --monitor"
-
 
 [build]
 rustflags = [
   "-C", "link-arg=-Tlinkall.x",
-
-  "-C", "link-arg=-nostartfiles",
 ]
 
-target = "xtensa-esp32-none-elf"
+target = "riscv32imac-unknown-none-elf"
 
 [unstable]
 build-std = ["core"]

@@ -31,10 +31,8 @@ jobs:
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
       - name: Setup Rust
-        uses: esp-rs/xtensa-toolchain@v1.5
+        uses: dtolnay/rust-toolchain@stable
         with:
-          default: true
-          buildtargets: esp32
-          ldproxy: false
+          targets: riscv32imac-unknown-none-elf
       - name: Run command
         run: cargo ${{ matrix.action.command }} ${{ matrix.action.args }}
