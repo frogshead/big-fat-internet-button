@@ -8,14 +8,13 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 esp-hal = { version = "0.21.1", features = ["esp32c6"] }
 esp-backtrace = { version = "0.14.2", features = ["esp32c6", "panic-handler", "exception-handler", "println"] }
-esp-println = { version = "0.12.0", features = ["esp32c6"] }
-
-ds18b20 = "0.1.1"
+esp-println = { version = "0.12.0", features = ["esp32c6", "log"] }
+log = { version = "0.4.22" }
 # esp-wifi = { version= "0.11.0", features = ["esp32c6"]}
 # This seems to be related to esp32-hal version 0.17 as with 0.16 there is not problem
 # Without this project can be build, but if included will get error:
 #
-# error: One of the feature flags must be provided: xtal-26mhz, xtal-40mhz, 
+# error: One of the feature flags must be provided: xtal-26mhz, xtal-40mhz,
 #    --> /home/mikko/.cargo/registry/src/index.crates.io-6f17d22bba15001f/esp-hal-common-0.13.1/build.rs:31:9
 #     |
 # 31  | ...   compile_error!(concat!("One of the feature flags must be provided: ", $($all, ", "),*...
@@ -25,7 +24,6 @@ ds18b20 = "0.1.1"
 #     |       -------------------------------------------------------- in this macro invocation
 #     |
 #     = note: this error originates in the macro `assert_used_features` which comes from the expansion of the macro `assert_unique_used_features` (in Nightly builds, run with -Z macro-backtrace for more info)
-
 
 [profile.release]
 # Explicitly disable LTO which the Xtensa codegen backend has issues

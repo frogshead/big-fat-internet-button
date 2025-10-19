@@ -2,18 +2,21 @@
 #![no_main]
 
 use esp_backtrace as _;
-use esp_hal::{delay::Delay, peripherals, prelude::*, rng::Rng};
-use esp_println::println;
+use esp_hal::{delay::Delay, prelude::*};
 
 #[entry]
 fn main() -> ! {
-    let peripherals = unsafe { peripherals::Peripherals::steal() };
+    let _peripherals = esp_hal::init(esp_hal::Config::default());
     let delay = Delay::new();
-    let mut rng = Rng::new(peripherals.RNG);
 
-    println!("ESP32-C6 DevKitC-1 Started");
+    esp_println::logger::init_logger_from_env();
+
+    log::info!("Hello from ESP32-C6!");
+
+    let mut counter = 0u32;
     loop {
-        println!("Random number generated: {}", rng.random());
-        delay.delay_millis(500);
+        log::info!("Counter: {}", counter);
+        counter = counter.wrapping_add(1);
+        delay.delay(1000.millis());
     }
 }
