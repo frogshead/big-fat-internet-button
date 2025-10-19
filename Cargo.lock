@@ -33,10 +33,10 @@ dependencies = [
 name = "big-fat-internet-button"
 version = "0.1.0"
 dependencies = [
- "ds18b20",
  "esp-backtrace",
  "esp-hal",
  "esp-println",
+ "log",
 ]
 
 [[package]]
@@ -171,16 +171,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95249b50c6c185bee49034bcb378a49dc2b5dff0be90ff6616d31d64febab05d"
 dependencies = [
  "litrs",
-]
-
-[[package]]
-name = "ds18b20"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c9cd37ace0416c30c2874cd67135508de493e34135c67878b01e13aba91b53ce"
-dependencies = [
- "embedded-hal 0.2.7",
- "one-wire-bus",
 ]
 
 [[package]]
@@ -602,15 +592,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62948e14d923ea95ea2c7c86c71013138b66525b86bdc08d2dcc262bdb497b87"
 dependencies = [
  "memchr",
-]
-
-[[package]]
-name = "one-wire-bus"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9761e13074f8f916702c1a1dbe0eda3fb8478704db00493f5a5c27ed5847710"
-dependencies = [
- "embedded-hal 0.2.7",
 ]
 
 [[package]]
