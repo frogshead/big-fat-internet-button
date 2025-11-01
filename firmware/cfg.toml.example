@@ -1,0 +1,9 @@
+[firmware]
+wifi_ssid = "your-wifi-ssid"
+wifi_password = "your-wifi-password"
+backend_url = "http://192.168.1.100:3000"
+device_id = "esp32-button-001"
+
+# GPIO pin for the button (ESP32-C6 DevKitC-1)
+# GPIO9 is a good choice as it's available on the board
+button_gpio = 9
