@@ -3,17 +3,17 @@
 
 extern crate alloc;
 
-use esp_backtrace as _;
-use embassy_net::{StackResources, tcp::TcpSocket};
+use embassy_net::{tcp::TcpSocket, StackResources};
 use embassy_time::{Duration, Timer};
-use static_cell::StaticCell;
+use esp_backtrace as _;
 use esp_hal::{
     gpio::{Input, InputConfig, Pull},
     rmt::Rmt,
     time::Rate,
 };
 use esp_hal_smartled::{smart_led_buffer, SmartLedsAdapter};
-use smart_leds::{RGB8, SmartLedsWrite};
+use smart_leds::{SmartLedsWrite, RGB8};
+use static_cell::StaticCell;
 
 // WiFi and networking imports (using Embassy async with esp-radio)
 use esp_radio::wifi::{new as wifi_new, ClientConfig, WifiDevice};
@@ -22,10 +22,14 @@ const DEVICE_ID: &str = "esp32-button-001";
 const BLINK_DURATION_MS: u32 = 5000;
 
 // LED color definitions
-const IDLE_COLOR: RGB8 = RGB8 { r: 0, g: 50, b: 100 };  // Soft blue
-// const WARNING_COLOR: RGB8 = RGB8 { r: 255, g: 0, b: 0 };  // Red
-const LAUNCH_COLOR: RGB8 = RGB8 { r: 255, g: 0, b: 0 };  // Bright red
-const STARTUP_COLOR: RGB8 = RGB8 { r: 0, g: 100, b: 0 };  // Green
+const IDLE_COLOR: RGB8 = RGB8 {
+    r: 0,
+    g: 50,
+    b: 100,
+}; // Soft blue
+   // const WARNING_COLOR: RGB8 = RGB8 { r: 255, g: 0, b: 0 };  // Red
+const LAUNCH_COLOR: RGB8 = RGB8 { r: 255, g: 0, b: 0 }; // Bright red
+const STARTUP_COLOR: RGB8 = RGB8 { r: 0, g: 100, b: 0 }; // Green
 
 // WiFi configuration (from environment variables)
 const WIFI_SSID: &str = env!("WIFI_SSID");
@@ -33,7 +37,11 @@ const WIFI_PASSWORD: &str = env!("WIFI_PASSWORD");
 const BACKEND_URL: &str = env!("BACKEND_URL");
 
 // WiFi status colors
-const WIFI_ERROR_COLOR: RGB8 = RGB8 { r: 100, g: 50, b: 0 };        // Orange
+const WIFI_ERROR_COLOR: RGB8 = RGB8 {
+    r: 100,
+    g: 50,
+    b: 0,
+}; // Orange
 
 esp_bootloader_esp_idf::esp_app_desc!();
 
@@ -72,7 +80,11 @@ fn countdown_pulse_color(elapsed_ms: u32, total_duration_ms: u32) -> RGB8 {
     let max_intensity = 128 + (progress as u32 * 127 / 255);
     let intensity = ((pulse_brightness as u32 * max_intensity) / 255) as u8;
 
-    RGB8 { r: intensity, g: 0, b: 0 }
+    RGB8 {
+        r: intensity,
+        g: 0,
+        b: 0,
+    }
 }
 
 // Embassy network task - runs the network stack
@@ -148,9 +160,19 @@ async fn send_destruction_event(
     ];
 
     let port: u16 = port_str.parse().unwrap_or(3000);
-    let remote_endpoint = (embassy_net::Ipv4Address::new(ip_bytes[0], ip_bytes[1], ip_bytes[2], ip_bytes[3]), port);
+    let remote_endpoint = (
+        embassy_net::Ipv4Address::new(ip_bytes[0], ip_bytes[1], ip_bytes[2], ip_bytes[3]),
+        port,
+    );
 
-    log::info!("Connecting to backend at {}.{}.{}.{}:{}", ip_bytes[0], ip_bytes[1], ip_bytes[2], ip_bytes[3], port);
+    log::info!(
+        "Connecting to backend at {}.{}.{}.{}:{}",
+        ip_bytes[0],
+        ip_bytes[1],
+        ip_bytes[2],
+        ip_bytes[3],
+        port
+    );
 
     // Create TCP socket
     let mut rx_buffer = [0; 2048];
@@ -188,11 +210,17 @@ async fn send_destruction_event(
                     let mut response_buffer = [0u8; 512];
                     match socket.read(&mut response_buffer).await {
                         Ok(len) => {
-                            let response_str = core::str::from_utf8(&response_buffer[..len]).unwrap_or("");
-                            log::info!("HTTP Response: {}", response_str.split('\r').next().unwrap_or(""));
+                            let response_str =
+                                core::str::from_utf8(&response_buffer[..len]).unwrap_or("");
+                            log::info!(
+                                "HTTP Response: {}",
+                                response_str.split('\r').next().unwrap_or("")
+                            );
 
                             // Check for "HTTP/1.1 2xx" status code
-                            if response_str.starts_with("HTTP/1.1 2") || response_str.starts_with("HTTP/1.0 2") {
+                            if response_str.starts_with("HTTP/1.1 2")
+                                || response_str.starts_with("HTTP/1.0 2")
+                            {
                                 log::info!("Destruction event sent successfully!");
                                 socket.close();
                                 return true;
@@ -238,7 +266,8 @@ async fn main_task(spawner: embassy_executor::Spawner) -> ! {
 
     // Initialize WiFi radio
     static RADIO_CONTROLLER: StaticCell<esp_radio::Controller<'static>> = StaticCell::new();
-    let radio_init = RADIO_CONTROLLER.init(esp_radio::init().expect("Failed to initialize WiFi radio"));
+    let radio_init =
+        RADIO_CONTROLLER.init(esp_radio::init().expect("Failed to initialize WiFi radio"));
 
     // Create WiFi controller and device
     let (controller, device_result) = wifi_new(radio_init, peripherals.WIFI, Default::default())
@@ -253,7 +282,7 @@ async fn main_task(spawner: embassy_executor::Spawner) -> ! {
         device,
         embassy_net::Config::dhcpv4(Default::default()),
         RESOURCES.init(StackResources::new()),
-        embassy_time::Instant::now().as_millis() as u64
+        embassy_time::Instant::now().as_millis() as u64,
     );
 
     let stack = STACK.init(stack_inner);
@@ -265,16 +294,15 @@ async fn main_task(spawner: embassy_executor::Spawner) -> ! {
     log::info!("WiFi tasks spawned, waiting for connection...");
 
     // Setup GPIO for button
-    let button = Input::new(peripherals.GPIO9, InputConfig::default().with_pull(Pull::Up));
+    let button = Input::new(
+        peripherals.GPIO9,
+        InputConfig::default().with_pull(Pull::Up),
+    );
 
     // Setup RMT for WS2812B LED
     let rmt = Rmt::new(peripherals.RMT, Rate::from_mhz(80)).expect("Failed to initialize RMT");
-    let mut rmt_buffer = smart_led_buffer!(1);  // Buffer for 1 LED
-    let mut led = SmartLedsAdapter::new(
-        rmt.channel0,
-        peripherals.GPIO8,
-        &mut rmt_buffer,
-    );
+    let mut rmt_buffer = smart_led_buffer!(1); // Buffer for 1 LED
+    let mut led = SmartLedsAdapter::new(rmt.channel0, peripherals.GPIO8, &mut rmt_buffer);
 
     log::info!("Button: GPIO9 (BOOT button)");
     log::info!("LED: GPIO8");
@@ -293,7 +321,7 @@ async fn main_task(spawner: embassy_executor::Spawner) -> ! {
 
     let mut launch_count = 0u32;
     let mut last_state = button.is_high();
-    let mut idle_time_ms = 0u32;  // Track time for breathing
+    let mut idle_time_ms = 0u32; // Track time for breathing
 
     loop {
         let current_state = button.is_high();
@@ -371,4 +399,3 @@ async fn main_task(spawner: embassy_executor::Spawner) -> ! {
         Timer::after(Duration::from_millis(50)).await;
     }
 }
-

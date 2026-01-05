@@ -42,30 +42,34 @@ where
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         // Get credentials from environment
-        let expected_username = std::env::var("ADMIN_USERNAME").unwrap_or_else(|_| "admin".to_string());
-        let expected_password = std::env::var("ADMIN_PASSWORD").unwrap_or_else(|_| "admin".to_string());
+        let expected_username =
+            std::env::var("ADMIN_USERNAME").unwrap_or_else(|_| "admin".to_string());
+        let expected_password =
+            std::env::var("ADMIN_PASSWORD").unwrap_or_else(|_| "admin".to_string());
 
         // Extract the Authorization header
-        let auth_header: TypedHeader<Authorization<Basic>> = parts
-            .extract()
-            .await
-            .map_err(|_| {
+        let auth_header: TypedHeader<Authorization<Basic>> =
+            parts.extract().await.map_err(|_| {
                 (
                     StatusCode::UNAUTHORIZED,
                     [("WWW-Authenticate", "Basic realm=\"Admin Area\"")],
                     "Unauthorized",
-                ).into_response()
+                )
+                    .into_response()
             })?;
 
         // Check credentials
-        if auth_header.username() == expected_username && auth_header.password() == expected_password {
+        if auth_header.username() == expected_username
+            && auth_header.password() == expected_password
+        {
             Ok(BasicAuth)
         } else {
             Err((
                 StatusCode::UNAUTHORIZED,
                 [("WWW-Authenticate", "Basic realm=\"Admin Area\"")],
                 "Invalid credentials",
-            ).into_response())
+            )
+                .into_response())
         }
     }
 }
@@ -88,7 +92,10 @@ async fn main() {
     let admin_username = std::env::var("ADMIN_USERNAME").unwrap_or_else(|_| "admin".to_string());
     let admin_password = std::env::var("ADMIN_PASSWORD").unwrap_or_else(|_| "admin".to_string());
 
-    tracing::info!("Admin authentication enabled (username: {})", admin_username);
+    tracing::info!(
+        "Admin authentication enabled (username: {})",
+        admin_username
+    );
     if admin_username == "admin" && admin_password == "admin" {
         tracing::warn!("⚠️  Using default credentials! Set ADMIN_USERNAME and ADMIN_PASSWORD environment variables for production.");
     }
@@ -368,7 +375,6 @@ async fn admin_page_handler(_auth: BasicAuth, State(state): State<AppState>) -> 
         </body>
         </html>
         "#,
-        total_destructions,
-        events_html
+        total_destructions, events_html
     ))
 }

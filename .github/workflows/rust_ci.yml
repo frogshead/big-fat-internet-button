@@ -21,6 +21,8 @@ jobs:
         action:
           - command: build
             args: --bin backend --release
+          - command: build
+            args: --package firmware --target riscv32imac-unknown-none-elf --release
           - command: fmt
             args: --all -- --check --color always
           - command: clippy
