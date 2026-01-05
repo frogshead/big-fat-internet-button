@@ -38,3 +38,7 @@ jobs:
           targets: riscv32imac-unknown-none-elf
       - name: Run command
         run: cargo ${{ matrix.action.command }} ${{ matrix.action.args }}
+        env:
+          WIFI_SSID: ci-placeholder
+          WIFI_PASSWORD: ci-placeholder
+          BACKEND_URL: http://localhost:3000
