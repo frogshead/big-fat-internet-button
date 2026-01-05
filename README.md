@@ -12,7 +12,7 @@ This is a Cargo workspace with two components:
 
 ## Hardware Specification
 
-- **Dev Board**: [ESP32-C6-DevKitC-1](https://github.com/esp-rs/esp-rust-board/tree/master)
+- **Dev Board**: [ESP32-C6-DevKitC-1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c6/esp32-c6-devkitc-1/user_guide.html#getting-started)
 - **Button**: [Big Red Button from AliExpress](https://www.aliexpress.com/item/1005008644989428.html?spm=a2g0o.order_list.order_list_main.5.e77a1802nCw0Yu)
 
 ## Backend
@@ -86,12 +86,41 @@ Currently a basic hello world that logs counter values. Will be updated to:
 - Monitor button press
 - Send POST requests to backend on button press
 
-### Building Firmware
+### Building and Flashing Firmware
 
 ```bash
 cd firmware
+
+# Option 1: Build and flash in one command (recommended)
+cargo espflash flash --release --monitor
+
+# Option 2: Build first, then flash
 cargo build --release
+espflash flash --monitor target/riscv32imac-unknown-none-elf/release/firmware
+
+# Specify port explicitly (useful if auto-detect fails)
+espflash flash --port /dev/ttyACM0 --monitor target/riscv32imac-unknown-none-elf/release/firmware
+
+# Or with cargo espflash
+cargo espflash flash --release --port /dev/ttyACM0 --monitor
 ```
+
+### Monitoring Serial Output
+
+After flashing, you can monitor the serial output:
+
+```bash
+# Using screen (Linux/macOS)
+screen /dev/ttyACM0 115200
+
+# Or using espflash monitor
+espflash monitor
+```
+
+**Exiting screen:**
+- `Ctrl+A` then `K` (then press `y` to confirm) - kills the session
+- `Ctrl+A` then `\` - quits screen
+- `Ctrl+A` then `D` - detaches (session runs in background)
 
 ## Future Plans
 

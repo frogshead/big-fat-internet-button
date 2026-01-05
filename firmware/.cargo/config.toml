@@ -1,5 +1,5 @@
 [target.riscv32imac-unknown-none-elf]
-runner = "espflash flash --monitor --port /dev/ttyUSB0"
+runner = "espflash flash --monitor --port /dev/ttyACM0"
 
 [env]
 ESP_LOG="info"
