@@ -11,6 +11,25 @@ use esp_hal::{
 use esp_hal_smartled::{smart_led_buffer, SmartLedsAdapter};
 use smart_leds::{RGB8, SmartLedsWrite};
 
+// Heap allocator for WiFi (commented out until WiFi dependencies resolved)
+// TODO: Uncomment when esp-alloc and esp-wifi are properly configured
+// use esp_alloc as _;
+// const HEAP_SIZE: usize = 98304;  // 96 KB for ESP32-C6 WiFi
+// static mut HEAP: [u8; HEAP_SIZE] = [0; HEAP_SIZE];
+// #[global_allocator]
+// static ALLOCATOR: esp_alloc::EspHeap = esp_alloc::EspHeap::empty();
+
+// WiFi and networking imports (commented out until compatible versions found)
+// TODO: Uncomment when esp-wifi compatible with esp-hal 1.0.0 is available
+// #[allow(unused_imports)]
+// use esp_wifi::{
+//     init as wifi_init,
+//     wifi::{ClientConfiguration, Configuration, WifiController, WifiDevice, WifiStaDevice},
+//     EspWifiController,
+// };
+// #[allow(unused_imports)]
+// use blocking_network_stack::Stack;
+
 const DEVICE_ID: &str = "esp32-button-001";
 const BLINK_DURATION_MS: u32 = 5000;
 
@@ -19,6 +38,16 @@ const IDLE_COLOR: RGB8 = RGB8 { r: 0, g: 50, b: 100 };  // Soft blue
 // const WARNING_COLOR: RGB8 = RGB8 { r: 255, g: 0, b: 0 };  // Red
 const LAUNCH_COLOR: RGB8 = RGB8 { r: 255, g: 0, b: 0 };  // Bright red
 const STARTUP_COLOR: RGB8 = RGB8 { r: 0, g: 100, b: 0 };  // Green
+
+// WiFi configuration (from environment variables)
+const WIFI_SSID: &str = env!("WIFI_SSID");
+const WIFI_PASSWORD: &str = env!("WIFI_PASSWORD");
+const BACKEND_URL: &str = env!("BACKEND_URL");
+
+// WiFi status colors
+const WIFI_CONNECTING_COLOR: RGB8 = RGB8 { r: 100, g: 0, b: 100 };  // Purple
+const WIFI_CONNECTED_COLOR: RGB8 = RGB8 { r: 0, g: 100, b: 0 };     // Green
+const WIFI_ERROR_COLOR: RGB8 = RGB8 { r: 100, g: 50, b: 0 };        // Orange
 
 esp_bootloader_esp_idf::esp_app_desc!();
 
@@ -60,10 +89,35 @@ fn countdown_pulse_color(elapsed_ms: u32, total_duration_ms: u32) -> RGB8 {
     RGB8 { r: intensity, g: 0, b: 0 }
 }
 
+// STUB: WiFi initialization function (to be implemented)
+// Returns None to indicate WiFi is not yet implemented
+fn init_wifi<const BUFFER_SIZE: usize>(
+    _led: &mut SmartLedsAdapter<'_, BUFFER_SIZE>,
+    _delay: &mut Delay,
+) -> Option<()> {
+    log::warn!("WiFi initialization stub - not yet implemented");
+    None
+}
+
+// STUB: Send HTTP POST request to backend (to be implemented)
+// Returns false to indicate not yet implemented
+fn send_destruction_event(
+    _device_id: &str,
+    _delay: &mut Delay,
+) -> bool {
+    log::warn!("HTTP POST stub - not yet implemented");
+    false
+}
+
 #[esp_hal::main]
 fn main() -> ! {
+    // TODO: Initialize heap allocator for WiFi (API needs verification for esp-alloc 0.9.0)
+    // unsafe {
+    //     ALLOCATOR.init(core::ptr::addr_of_mut!(HEAP) as *mut u8, HEAP_SIZE);
+    // }
+
     let peripherals = esp_hal::init(esp_hal::Config::default());
-    let delay = Delay::new();
+    let mut delay = Delay::new();
 
     esp_println::logger::init_logger_from_env();
 
@@ -94,6 +148,16 @@ fn main() -> ! {
         delay.delay_millis(200);
         led.write([RGB8::default()].iter().cloned()).ok();
         delay.delay_millis(200);
+    }
+
+    // Initialize WiFi (stub for now)
+    let wifi_stack = init_wifi(&mut led, &mut delay);
+    let wifi_enabled = wifi_stack.is_some();
+
+    if wifi_enabled {
+        log::info!("WiFi initialized successfully");
+    } else {
+        log::warn!("WiFi not available - continuing without network");
     }
 
     log::info!("BUTTON ARMED - Press to launch!");
@@ -138,8 +202,29 @@ fn main() -> ! {
             log::warn!("LAUNCH!");
             log::warn!("");
 
-            // Solid bright red at launch
-            led.write([LAUNCH_COLOR].iter().cloned()).ok();
+            // Send destruction event to backend (stub for now)
+            if wifi_enabled {
+                let success = send_destruction_event(DEVICE_ID, &mut delay);
+
+                if success {
+                    // Solid bright red at launch (success)
+                    led.write([LAUNCH_COLOR].iter().cloned()).ok();
+                } else {
+                    // Orange flash to indicate HTTP error (stub returns false)
+                    for _ in 0..3 {
+                        led.write([WIFI_ERROR_COLOR].iter().cloned()).ok();
+                        delay.delay_millis(200);
+                        led.write([RGB8::default()].iter().cloned()).ok();
+                        delay.delay_millis(200);
+                    }
+                    led.write([LAUNCH_COLOR].iter().cloned()).ok();
+                }
+            } else {
+                // WiFi not available
+                log::warn!("WiFi not available - skipping backend notification");
+                led.write([LAUNCH_COLOR].iter().cloned()).ok();
+            }
+
             delay.delay_millis(2000);
 
             // Reset idle time for smooth breathing restart
