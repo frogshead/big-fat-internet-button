@@ -11,3 +11,5 @@ esp-backtrace = { version = "0.14.2", features = ["esp32c6", "panic-handler", "p
 esp-println = { version = "0.12.0", features = ["esp32c6", "log"] }
 log = { version = "0.4.22" }
 esp-bootloader-esp-idf = { version = "0.4.0", features = ["esp32c6"] }
+esp-hal-smartled = { version = "0.17.0" }
+smart-leds = { version = "0.4.0" }
