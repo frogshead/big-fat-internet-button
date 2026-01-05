@@ -4,9 +4,9 @@ runner = "espflash flash --monitor --port /dev/ttyACM0"
 [env]
 ESP_LOG="info"
 # WiFi Configuration (update with your values)
-WIFI_SSID="your-wifi-ssid"
-WIFI_PASSWORD="your-wifi-password"
-BACKEND_URL="192.168.1.100:3000"
+WIFI_SSID="ssid"
+WIFI_PASSWORD="top-secret"
+BACKEND_URL="192.168.1.1:3000"
 
 [build]
 rustflags = [

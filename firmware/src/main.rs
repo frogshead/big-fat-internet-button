@@ -1,9 +1,13 @@
 #![no_std]
 #![no_main]
 
+extern crate alloc;
+
 use esp_backtrace as _;
+use embassy_net::{StackResources, tcp::TcpSocket};
+use embassy_time::{Duration, Timer};
+use static_cell::StaticCell;
 use esp_hal::{
-    delay::Delay,
     gpio::{Input, InputConfig, Pull},
     rmt::Rmt,
     time::Rate,
@@ -11,24 +15,8 @@ use esp_hal::{
 use esp_hal_smartled::{smart_led_buffer, SmartLedsAdapter};
 use smart_leds::{RGB8, SmartLedsWrite};
 
-// Heap allocator for WiFi (commented out until WiFi dependencies resolved)
-// TODO: Uncomment when esp-alloc and esp-wifi are properly configured
-// use esp_alloc as _;
-// const HEAP_SIZE: usize = 98304;  // 96 KB for ESP32-C6 WiFi
-// static mut HEAP: [u8; HEAP_SIZE] = [0; HEAP_SIZE];
-// #[global_allocator]
-// static ALLOCATOR: esp_alloc::EspHeap = esp_alloc::EspHeap::empty();
-
-// WiFi and networking imports (commented out until compatible versions found)
-// TODO: Uncomment when esp-wifi compatible with esp-hal 1.0.0 is available
-// #[allow(unused_imports)]
-// use esp_wifi::{
-//     init as wifi_init,
-//     wifi::{ClientConfiguration, Configuration, WifiController, WifiDevice, WifiStaDevice},
-//     EspWifiController,
-// };
-// #[allow(unused_imports)]
-// use blocking_network_stack::Stack;
+// WiFi and networking imports (using Embassy async with esp-radio)
+use esp_radio::wifi::{new as wifi_new, ClientConfig, WifiDevice};
 
 const DEVICE_ID: &str = "esp32-button-001";
 const BLINK_DURATION_MS: u32 = 5000;
@@ -45,8 +33,6 @@ const WIFI_PASSWORD: &str = env!("WIFI_PASSWORD");
 const BACKEND_URL: &str = env!("BACKEND_URL");
 
 // WiFi status colors
-const WIFI_CONNECTING_COLOR: RGB8 = RGB8 { r: 100, g: 0, b: 100 };  // Purple
-const WIFI_CONNECTED_COLOR: RGB8 = RGB8 { r: 0, g: 100, b: 0 };     // Green
 const WIFI_ERROR_COLOR: RGB8 = RGB8 { r: 100, g: 50, b: 0 };        // Orange
 
 esp_bootloader_esp_idf::esp_app_desc!();
@@ -89,42 +75,194 @@ fn countdown_pulse_color(elapsed_ms: u32, total_duration_ms: u32) -> RGB8 {
     RGB8 { r: intensity, g: 0, b: 0 }
 }
 
-// STUB: WiFi initialization function (to be implemented)
-// Returns None to indicate WiFi is not yet implemented
-fn init_wifi<const BUFFER_SIZE: usize>(
-    _led: &mut SmartLedsAdapter<'_, BUFFER_SIZE>,
-    _delay: &mut Delay,
-) -> Option<()> {
-    log::warn!("WiFi initialization stub - not yet implemented");
-    None
+// Embassy network task - runs the network stack
+#[embassy_executor::task]
+async fn net_task(mut runner: embassy_net::Runner<'static, WifiDevice<'static>>) -> ! {
+    runner.run().await
 }
 
-// STUB: Send HTTP POST request to backend (to be implemented)
-// Returns false to indicate not yet implemented
-fn send_destruction_event(
-    _device_id: &str,
-    _delay: &mut Delay,
+// Embassy connection task - manages WiFi connection
+#[embassy_executor::task]
+async fn connection(mut controller: esp_radio::wifi::WifiController<'static>) -> ! {
+    log::info!("Starting WiFi connection task");
+    loop {
+        if matches!(controller.is_started(), Ok(false)) {
+            let client_config = ClientConfig::default()
+                .with_ssid(WIFI_SSID.into())
+                .with_password(WIFI_PASSWORD.into());
+
+            let config = esp_radio::wifi::ModeConfig::Client(client_config);
+            controller.set_config(&config).ok();
+
+            log::info!("Starting WiFi controller...");
+            controller.start_async().await.ok();
+        }
+
+        if matches!(controller.is_connected(), Ok(false)) {
+            log::info!("Connecting to WiFi...");
+            match controller.connect_async().await {
+                Ok(_) => log::info!("WiFi connected!"),
+                Err(e) => {
+                    log::error!("Failed to connect to WiFi: {:?}", e);
+                    Timer::after(Duration::from_secs(5)).await;
+                }
+            }
+        }
+
+        Timer::after(Duration::from_millis(1000)).await;
+    }
+}
+
+// Send HTTP POST request to backend using embassy-net
+async fn send_destruction_event(
+    stack: &'static embassy_net::Stack<'static>,
+    device_id: &str,
 ) -> bool {
-    log::warn!("HTTP POST stub - not yet implemented");
+    log::info!("Sending destruction event to backend...");
+
+    // Wait for network to be ready
+    stack.wait_config_up().await;
+
+    // Parse BACKEND_URL (format: "IP:PORT")
+    let parts: heapless::Vec<&str, 2> = BACKEND_URL.split(':').collect();
+    if parts.len() < 2 {
+        log::error!("Invalid BACKEND_URL format: {}", BACKEND_URL);
+        return false;
+    }
+
+    let ip_str = parts[0];
+    let port_str = parts[1];
+
+    // Parse IP address
+    let ip_parts: heapless::Vec<&str, 4> = ip_str.split('.').collect();
+    if ip_parts.len() != 4 {
+        log::error!("Invalid IP address: {}", ip_str);
+        return false;
+    }
+
+    let ip_bytes = [
+        ip_parts[0].parse().unwrap_or(0),
+        ip_parts[1].parse().unwrap_or(0),
+        ip_parts[2].parse().unwrap_or(0),
+        ip_parts[3].parse().unwrap_or(0),
+    ];
+
+    let port: u16 = port_str.parse().unwrap_or(3000);
+    let remote_endpoint = (embassy_net::Ipv4Address::new(ip_bytes[0], ip_bytes[1], ip_bytes[2], ip_bytes[3]), port);
+
+    log::info!("Connecting to backend at {}.{}.{}.{}:{}", ip_bytes[0], ip_bytes[1], ip_bytes[2], ip_bytes[3], port);
+
+    // Create TCP socket
+    let mut rx_buffer = [0; 2048];
+    let mut tx_buffer = [0; 2048];
+    let mut socket = TcpSocket::new(*stack, &mut rx_buffer, &mut tx_buffer);
+    socket.set_timeout(Some(Duration::from_secs(10)));
+
+    // Connect to backend
+    match socket.connect(remote_endpoint).await {
+        Ok(_) => {
+            log::info!("TCP connected, sending HTTP POST...");
+
+            // Construct HTTP POST request
+            let json_body = "{\"device_id\":\"";
+            let json_end = "\"}";
+            let content_length = json_body.len() + device_id.len() + json_end.len();
+
+            let mut request = heapless::String::<512>::new();
+            use core::fmt::Write;
+
+            write!(request, "POST /api/destroy HTTP/1.1\r\n").ok();
+            write!(request, "Host: {}\r\n", ip_str).ok();
+            write!(request, "Content-Type: application/json\r\n").ok();
+            write!(request, "Content-Length: {}\r\n", content_length).ok();
+            write!(request, "Connection: close\r\n").ok();
+            write!(request, "\r\n").ok();
+            write!(request, "{}{}{}", json_body, device_id, json_end).ok();
+
+            // Send HTTP request
+            match socket.write(request.as_bytes()).await {
+                Ok(_) => {
+                    log::info!("HTTP request sent, waiting for response...");
+
+                    // Read response
+                    let mut response_buffer = [0u8; 512];
+                    match socket.read(&mut response_buffer).await {
+                        Ok(len) => {
+                            let response_str = core::str::from_utf8(&response_buffer[..len]).unwrap_or("");
+                            log::info!("HTTP Response: {}", response_str.split('\r').next().unwrap_or(""));
+
+                            // Check for "HTTP/1.1 2xx" status code
+                            if response_str.starts_with("HTTP/1.1 2") || response_str.starts_with("HTTP/1.0 2") {
+                                log::info!("Destruction event sent successfully!");
+                                socket.close();
+                                return true;
+                            } else {
+                                log::error!("HTTP request failed with non-2xx status");
+                            }
+                        }
+                        Err(e) => log::error!("Failed to read HTTP response: {:?}", e),
+                    }
+                }
+                Err(e) => log::error!("Failed to send HTTP request: {:?}", e),
+            }
+        }
+        Err(e) => log::error!("Failed to connect to backend: {:?}", e),
+    }
+
+    socket.close();
     false
 }
 
-#[esp_hal::main]
-fn main() -> ! {
-    // TODO: Initialize heap allocator for WiFi (API needs verification for esp-alloc 0.9.0)
-    // unsafe {
-    //     ALLOCATOR.init(core::ptr::addr_of_mut!(HEAP) as *mut u8, HEAP_SIZE);
-    // }
-
-    let peripherals = esp_hal::init(esp_hal::Config::default());
-    let mut delay = Delay::new();
-
+#[esp_rtos::main]
+async fn main(spawner: embassy_executor::Spawner) -> ! {
     esp_println::logger::init_logger_from_env();
 
     log::info!("===========================================");
     log::info!("  BIG RED INTERNET BUTTON");
     log::info!("  Device: {}", DEVICE_ID);
     log::info!("===========================================");
+
+    main_task(spawner).await
+}
+
+async fn main_task(spawner: embassy_executor::Spawner) -> ! {
+    let peripherals = esp_hal::init(esp_hal::Config::default());
+
+    // Initialize heap allocator for WiFi (98 KB for ESP32-C6)
+    esp_alloc::heap_allocator!(size: 98304);
+
+    // Initialize esp-rtos for WiFi radio
+    let sw_int = unsafe { esp_hal::interrupt::software::SoftwareInterrupt::<0>::steal() };
+    let timer = esp_hal::timer::timg::TimerGroup::new(peripherals.TIMG0);
+    esp_rtos::start(timer.timer0, sw_int);
+
+    // Initialize WiFi radio
+    static RADIO_CONTROLLER: StaticCell<esp_radio::Controller<'static>> = StaticCell::new();
+    let radio_init = RADIO_CONTROLLER.init(esp_radio::init().expect("Failed to initialize WiFi radio"));
+
+    // Create WiFi controller and device
+    let (controller, device_result) = wifi_new(radio_init, peripherals.WIFI, Default::default())
+        .expect("Failed to create WiFi controller");
+    let device = device_result.sta;
+
+    // Initialize embassy-net stack
+    static RESOURCES: StaticCell<StackResources<3>> = StaticCell::new();
+    static STACK: StaticCell<embassy_net::Stack<'static>> = StaticCell::new();
+
+    let (stack_inner, runner) = embassy_net::new(
+        device,
+        embassy_net::Config::dhcpv4(Default::default()),
+        RESOURCES.init(StackResources::new()),
+        embassy_time::Instant::now().as_millis() as u64
+    );
+
+    let stack = STACK.init(stack_inner);
+
+    // Spawn WiFi tasks
+    spawner.spawn(connection(controller)).ok();
+    spawner.spawn(net_task(runner)).ok();
+
+    log::info!("WiFi tasks spawned, waiting for connection...");
 
     // Setup GPIO for button
     let button = Input::new(peripherals.GPIO9, InputConfig::default().with_pull(Pull::Up));
@@ -145,19 +283,9 @@ fn main() -> ! {
     // Startup sequence (3 quick green flashes)
     for _ in 0..3 {
         led.write([STARTUP_COLOR].iter().cloned()).ok();
-        delay.delay_millis(200);
+        Timer::after(Duration::from_millis(200)).await;
         led.write([RGB8::default()].iter().cloned()).ok();
-        delay.delay_millis(200);
-    }
-
-    // Initialize WiFi (stub for now)
-    let wifi_stack = init_wifi(&mut led, &mut delay);
-    let wifi_enabled = wifi_stack.is_some();
-
-    if wifi_enabled {
-        log::info!("WiFi initialized successfully");
-    } else {
-        log::warn!("WiFi not available - continuing without network");
+        Timer::after(Duration::from_millis(200)).await;
     }
 
     log::info!("BUTTON ARMED - Press to launch!");
@@ -190,7 +318,7 @@ fn main() -> ! {
                 let elapsed_ms = i * 100;
                 let color = countdown_pulse_color(elapsed_ms, BLINK_DURATION_MS);
                 led.write([color].iter().cloned()).ok();
-                delay.delay_millis(100);
+                Timer::after(Duration::from_millis(100)).await;
 
                 // Log countdown every second (every 10 iterations)
                 if i % 10 == 0 {
@@ -202,36 +330,30 @@ fn main() -> ! {
             log::warn!("LAUNCH!");
             log::warn!("");
 
-            // Send destruction event to backend (stub for now)
-            if wifi_enabled {
-                let success = send_destruction_event(DEVICE_ID, &mut delay);
+            // Send destruction event to backend
+            let success = send_destruction_event(stack, DEVICE_ID).await;
 
-                if success {
-                    // Solid bright red at launch (success)
-                    led.write([LAUNCH_COLOR].iter().cloned()).ok();
-                } else {
-                    // Orange flash to indicate HTTP error (stub returns false)
-                    for _ in 0..3 {
-                        led.write([WIFI_ERROR_COLOR].iter().cloned()).ok();
-                        delay.delay_millis(200);
-                        led.write([RGB8::default()].iter().cloned()).ok();
-                        delay.delay_millis(200);
-                    }
-                    led.write([LAUNCH_COLOR].iter().cloned()).ok();
-                }
+            if success {
+                // Solid bright red at launch (success)
+                led.write([LAUNCH_COLOR].iter().cloned()).ok();
             } else {
-                // WiFi not available
-                log::warn!("WiFi not available - skipping backend notification");
+                // Orange flash to indicate HTTP error
+                for _ in 0..3 {
+                    led.write([WIFI_ERROR_COLOR].iter().cloned()).ok();
+                    Timer::after(Duration::from_millis(200)).await;
+                    led.write([RGB8::default()].iter().cloned()).ok();
+                    Timer::after(Duration::from_millis(200)).await;
+                }
                 led.write([LAUNCH_COLOR].iter().cloned()).ok();
             }
 
-            delay.delay_millis(2000);
+            Timer::after(Duration::from_millis(2000)).await;
 
             // Reset idle time for smooth breathing restart
             idle_time_ms = 0;
 
             // Debounce delay
-            delay.delay_millis(500);
+            Timer::after(Duration::from_millis(500)).await;
         } else {
             // Idle breathing effect
             let brightness = breathing_brightness(idle_time_ms, 3000);
@@ -246,6 +368,7 @@ fn main() -> ! {
         }
 
         last_state = current_state;
-        delay.delay_millis(50);
+        Timer::after(Duration::from_millis(50)).await;
     }
 }
+
