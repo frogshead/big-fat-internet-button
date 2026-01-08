@@ -1,0 +1,36 @@
+# Build artifacts
+target/
+**/*.rs.bk
+**/*.pdb
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!backend/README.md
+
+# CI/CD
+.github/
+
+# Firmware specific (not needed for backend Docker image)
+firmware/src/
+firmware/.cargo/
+firmware/rust-toolchain.toml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local config
+.env
+*.local
