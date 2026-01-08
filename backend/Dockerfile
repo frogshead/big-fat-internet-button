@@ -16,8 +16,8 @@ RUN mkdir -p backend/src firmware/src && \
     echo "fn main() {}" > firmware/src/main.rs
 
 # Build dependencies only
-RUN cargo build --bin backend --release && \
-    rm -rf backend/src firmware/src
+RUN cargo build --package backend --release && \
+    rm -rf backend/src
 
 # Copy actual source code
 COPY backend/src backend/src
@@ -26,7 +26,7 @@ COPY backend/tests backend/tests
 # Build the actual application
 # Touch main.rs to force rebuild of our code (dependencies are cached)
 RUN touch backend/src/main.rs && \
-    cargo build --bin backend --release
+    cargo build --package backend --release
 
 # Runtime stage
 FROM debian:bookworm-slim
