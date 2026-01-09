@@ -41,7 +41,38 @@ docker run -p 3000:3000 \
 
 # Pull from GitHub Container Registry
 docker pull ghcr.io/<username>/big-fat-internet-button/backend:latest
+
+# Using Docker Compose
+docker-compose up -d
+docker-compose logs -f
 ```
+
+### Production Deployment with Nginx
+
+For production deployment with HTTPS:
+
+```bash
+# See nginx/SETUP.md for complete setup instructions
+
+# Quick start with Docker Compose
+docker-compose up -d
+
+# Install nginx configuration
+sudo cp nginx/arewegoneyet.conf /etc/nginx/sites-available/
+sudo ln -s /etc/nginx/sites-available/arewegoneyet.conf /etc/nginx/sites-enabled/
+
+# Get Let's Encrypt certificate
+sudo certbot certonly --webroot -w /var/www/certbot -d arewegoneyet.viitamäki.fi
+
+# Reload nginx
+sudo systemctl reload nginx
+```
+
+See `nginx/SETUP.md` for detailed setup instructions including:
+- Let's Encrypt SSL certificate setup
+- Nginx reverse proxy configuration
+- Firewall setup
+- Troubleshooting guide
 
 ### Firmware
 
