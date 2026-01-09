@@ -159,7 +159,7 @@ async fn send_destruction_event(
         ip_parts[3].parse().unwrap_or(0),
     ];
 
-    let port: u16 = port_str.parse().unwrap_or(3000);
+    let port: u16 = port_str.parse().unwrap_or(4000);
     let remote_endpoint = (
         embassy_net::Ipv4Address::new(ip_bytes[0], ip_bytes[1], ip_bytes[2], ip_bytes[3]),
         port,

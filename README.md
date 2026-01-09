@@ -38,13 +38,13 @@ cd backend
 cargo run
 ```
 
-The server will start on `http://localhost:3000`
+The server will start on `http://localhost:4000`
 
 ### API Endpoints
 
 **POST /api/destroy** - Trigger world destruction
 ```bash
-curl -X POST http://localhost:3000/api/destroy \
+curl -X POST http://localhost:4000/api/destroy \
   -H "Content-Type: application/json" \
   -d '{"device_id": "esp32-001"}'
 ```
@@ -61,12 +61,12 @@ Response:
 
 **GET /api/events** - Get all destruction events (JSON)
 ```bash
-curl http://localhost:3000/api/events
+curl http://localhost:4000/api/events
 ```
 
 **GET /admin** - View the admin dashboard in your browser
 ```
-http://localhost:3000/admin
+http://localhost:4000/admin
 ```
 
 **GET /** - Landing page

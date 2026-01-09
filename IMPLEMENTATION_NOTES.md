@@ -29,20 +29,20 @@ cargo run
 cargo run --bin backend
 ```
 
-The server runs on `http://localhost:3000`
+The server runs on `http://localhost:4000`
 
 **Testing:**
 ```bash
 # Trigger a destruction event
-curl -X POST http://localhost:3000/api/destroy \
+curl -X POST http://localhost:4000/api/destroy \
   -H "Content-Type: application/json" \
   -d '{"device_id": "esp32-test-001"}'
 
 # View events
-curl http://localhost:3000/api/events
+curl http://localhost:4000/api/events
 
 # Open admin dashboard
-firefox http://localhost:3000/admin
+firefox http://localhost:4000/admin
 ```
 
 ### ⚠️ Firmware (Code Ready, Build Issues)
@@ -120,7 +120,7 @@ firmware/
    # Terminal script to simulate button
    while true; do
      read -p "Press ENTER to destroy the world..."
-     curl -s -X POST http://localhost:3000/api/destroy \
+     curl -s -X POST http://localhost:4000/api/destroy \
        -H "Content-Type: application/json" \
        -d '{"device_id": "terminal-button-001"}'
      echo
@@ -128,7 +128,7 @@ firmware/
    ```
 
 3. **View admin dashboard:**
-   Open `http://localhost:3000/admin` in browser
+   Open `http://localhost:4000/admin` in browser
 
 ### Physical Button via Computer:
 
@@ -147,7 +147,7 @@ ser = serial.Serial('/dev/ttyUSB0', 115200)
 while True:
     line = ser.readline().decode('utf-8').strip()
     if 'BUTTON' in line:
-        requests.post('http://localhost:3000/api/destroy',
+        requests.post('http://localhost:4000/api/destroy',
                      json={'device_id': 'esp32-bridge-001'})
 ```
 

@@ -60,17 +60,17 @@ docker pull ghcr.io/frogshead/big-fat-internet-button/backend:latest
 docker run -d \
   --name big-red-button \
   --restart unless-stopped \
-  -p 127.0.0.1:3000:3000 \
+  -p 127.0.0.1:4000:4000 \
   -e ADMIN_USERNAME=admin \
   -e ADMIN_PASSWORD=YOUR_SECURE_PASSWORD_HERE \
   ghcr.io/frogshead/big-fat-internet-button/backend:latest
 
 # Verify it's running
 docker ps
-curl http://localhost:3000/
+curl http://localhost:4000/
 ```
 
-**Important**: Note that we bind to `127.0.0.1:3000` so the container is only accessible locally (through nginx).
+**Important**: Note that we bind to `127.0.0.1:4000` so the container is only accessible locally (through nginx).
 
 ## Step 4: Install Nginx Configuration
 
@@ -116,7 +116,7 @@ server {
     }
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:4000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -261,7 +261,7 @@ docker ps
 docker logs big-red-button
 
 # Test backend directly
-curl http://localhost:3000/
+curl http://localhost:4000/
 ```
 
 ### DNS issues with IDN domain
@@ -318,7 +318,7 @@ services:
     container_name: big-red-button
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:4000:4000"
     environment:
       - ADMIN_USERNAME=admin
       - ADMIN_PASSWORD=YOUR_SECURE_PASSWORD_HERE
@@ -364,5 +364,5 @@ If you encounter issues:
 1. Check nginx error logs: `/var/log/nginx/arewegoneyet_error.log`
 2. Check Docker logs: `docker logs big-red-button`
 3. Verify DNS resolution: `dig arewegoneyet.viitamäki.fi`
-4. Test backend directly: `curl http://localhost:3000/`
+4. Test backend directly: `curl http://localhost:4000/`
 5. Check certbot logs: `sudo journalctl -u certbot.timer`

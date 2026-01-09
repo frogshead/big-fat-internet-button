@@ -98,7 +98,7 @@ Edit `src/main.rs` lines 28-32:
 const SSID: &str = "YOUR_WIFI_SSID";
 const PASSWORD: &str = "YOUR_WIFI_PASSWORD";
 const BACKEND_IP: &str = "192.168.1.100";
-const BACKEND_PORT: u16 = 3000;
+const BACKEND_PORT: u16 = 4000;
 const DEVICE_ID: &str = "esp32-button-001";
 ```
 

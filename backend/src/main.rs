@@ -110,9 +110,9 @@ async fn main() {
         .with_state(app_state);
 
     // Run the server
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await.unwrap();
     tracing::info!("Server listening on {}", listener.local_addr().unwrap());
-    tracing::info!("Admin page available at http://localhost:3000/admin");
+    tracing::info!("Admin page available at http://localhost:4000/admin");
 
     axum::serve(listener, app).await.unwrap();
 }

@@ -51,7 +51,7 @@ RUN chown -R appuser:appuser /app
 USER appuser
 
 # Expose port
-EXPOSE 3000
+EXPOSE 4000
 
 # Set environment variables
 ENV RUST_LOG=info

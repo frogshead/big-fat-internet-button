@@ -14,7 +14,7 @@ A fun IoT project combining embedded Rust on ESP32-C6 (RISC-V) with a web backen
 ### Backend
 
 ```bash
-# Run backend server (starts on http://localhost:3000)
+# Run backend server (starts on http://localhost:4000)
 cargo run --bin backend
 
 # Or from backend directory
@@ -31,10 +31,10 @@ cargo test --bin backend
 docker build -f backend/Dockerfile -t big-red-button-backend .
 
 # Run container
-docker run -p 3000:3000 big-red-button-backend
+docker run -p 4000:4000 big-red-button-backend
 
 # Run with custom credentials
-docker run -p 3000:3000 \
+docker run -p 4000:4000 \
   -e ADMIN_USERNAME=admin \
   -e ADMIN_PASSWORD=supersecret \
   big-red-button-backend
@@ -123,7 +123,7 @@ ADMIN_USERNAME=admin ADMIN_PASSWORD=secret cargo run --bin backend
 Edit `firmware/.cargo/config.toml` to configure:
 - `WIFI_SSID` - Your WiFi network name
 - `WIFI_PASSWORD` - Your WiFi password
-- `BACKEND_URL` - Backend server IP:PORT (e.g., "192.168.1.100:3000")
+- `BACKEND_URL` - Backend server IP:PORT (e.g., "192.168.1.100:4000")
 
 The firmware also requires these variables as compile-time constants via `env!()` macro (firmware/src/main.rs:35-37).
 
@@ -207,12 +207,12 @@ You can test the backend without ESP32 hardware:
 cargo run --bin backend
 
 # Terminal 2: Simulate button press
-curl -X POST http://localhost:3000/api/destroy \
+curl -X POST http://localhost:4000/api/destroy \
   -H "Content-Type: application/json" \
   -d '{"device_id": "test-device-001"}'
 
 # Browser: Open admin dashboard
-http://localhost:3000/admin
+http://localhost:4000/admin
 # Login with: admin / admin (or your ADMIN_USERNAME/ADMIN_PASSWORD)
 ```
 

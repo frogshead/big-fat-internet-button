@@ -6,7 +6,7 @@ ESP_LOG="info"
 # WiFi Configuration (update with your values)
 WIFI_SSID="ssid"
 WIFI_PASSWORD="top-secret"
-BACKEND_URL="192.168.1.1:3000"
+BACKEND_URL="192.168.1.1:4000"
 
 [build]
 rustflags = [
