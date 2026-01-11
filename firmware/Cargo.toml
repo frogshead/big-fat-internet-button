@@ -19,11 +19,7 @@ esp-alloc = { version = "0.9.0" }
 esp-radio = { version = "0.17.0", features = ["esp32c6", "wifi", "esp-alloc", "unstable"] }
 esp-rtos = { version = "0.2.0", features = ["esp32c6", "esp-radio", "esp-alloc", "embassy"] }
 embassy-time = "0.5"
-embassy-net = { version = "0.7", features = ["tcp", "dhcpv4", "medium-ethernet", "dns"] }
+embassy-net = { version = "0.7", features = ["tcp", "dhcpv4", "medium-ethernet"] }
 embassy-executor = { version = "0.9", default-features = false }
 heapless = { version = "0.8", default-features = false }
 static_cell = "2.1"
-
-# HTTPS/TLS support
-reqwless = { version = "0.12", default-features = false, features = ["esp-mbedtls", "log"] }
-esp-mbedtls = { git = "https://github.com/esp-rs/esp-mbedtls.git", features = ["esp32c6"] }
