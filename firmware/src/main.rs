@@ -3,7 +3,7 @@
 
 extern crate alloc;
 
-use embassy_net::{dns::{DnsSocket, DnsQueryType}, tcp::TcpSocket, IpAddress, StackResources};
+use embassy_net::{tcp::TcpSocket, StackResources};
 use embassy_time::{Duration, Timer};
 use esp_backtrace as _;
 use esp_hal::{
@@ -122,59 +122,6 @@ async fn connection(mut controller: esp_radio::wifi::WifiController<'static>) ->
         }
 
         Timer::after(Duration::from_millis(1000)).await;
-    }
-}
-
-/// Parse HTTPS URL and resolve hostname to IP address
-/// Returns (hostname, port, ip_address) or error
-async fn resolve_backend_url(
-    stack: &'static embassy_net::Stack<'static>,
-    url: &str,
-) -> Result<(heapless::String<128>, u16, IpAddress), ()> {
-    // Parse HTTPS URL format: https://hostname:port/path
-    if !url.starts_with("https://") {
-        log::error!("URL must start with https://");
-        return Err(());
-    }
-
-    let url_without_proto = &url[8..]; // Strip "https://"
-
-    // Split hostname/path
-    let (host_port, _path) = url_without_proto
-        .split_once('/')
-        .unwrap_or((url_without_proto, ""));
-
-    // Parse hostname and port
-    let (hostname, port) = if let Some((h, p)) = host_port.split_once(':') {
-        (h, p.parse().unwrap_or(443))
-    } else {
-        (host_port, 443)
-    };
-
-    log::info!("Resolving hostname: {}", hostname);
-
-    // Wait for DHCP to configure DNS servers
-    stack.wait_config_up().await;
-
-    // Perform DNS query
-    let dns = DnsSocket::new(stack);
-    match dns.query(hostname, DnsQueryType::A).await {
-        Ok(addrs) => {
-            if let Some(addr) = addrs.first() {
-                log::info!("Resolved {} to {:?}", hostname, addr);
-                let mut hostname_str = heapless::String::new();
-                use core::fmt::Write;
-                write!(hostname_str, "{}", hostname).ok();
-                Ok((hostname_str, port, *addr))
-            } else {
-                log::error!("DNS returned no addresses");
-                Err(())
-            }
-        }
-        Err(e) => {
-            log::error!("DNS resolution failed: {:?}", e);
-            Err(())
-        }
     }
 }
 
