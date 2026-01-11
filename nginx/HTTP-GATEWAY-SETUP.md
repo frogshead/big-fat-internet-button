@@ -1,5 +1,7 @@
 # HTTP Gateway Setup for ESP32 Devices
 
+> **💡 Tip:** Looking to run the gateway on a Raspberry Pi? See [RASPBERRY-PI-GATEWAY.md](RASPBERRY-PI-GATEWAY.md) for native and Docker deployment options!
+
 ## Architecture Overview
 
 This setup uses a hybrid architecture to allow ESP32 devices to use simple HTTP while maintaining HTTPS security for public access:
