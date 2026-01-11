@@ -123,7 +123,9 @@ ADMIN_USERNAME=admin ADMIN_PASSWORD=secret cargo run --bin backend
 Edit `firmware/.cargo/config.toml` to configure:
 - `WIFI_SSID` - Your WiFi network name
 - `WIFI_PASSWORD` - Your WiFi password
-- `BACKEND_URL` - Backend server IP:PORT (e.g., "192.168.1.100:4000")
+- `BACKEND_URL` - **HTTP Gateway** IP:PORT (e.g., "192.168.1.100:8080")
+
+**Note**: For production, use the HTTP Gateway (nginx port 8080) instead of direct backend connection. This keeps ESP32 firmware simple while maintaining HTTPS security for public access.
 
 The firmware also requires these variables as compile-time constants via `env!()` macro (firmware/src/main.rs:35-37).
 
@@ -160,6 +162,7 @@ Embassy async runtime with three concurrent tasks:
 
 ### Data Flow
 
+**Production Architecture (HTTP Gateway)**:
 ```
 ESP32 Button Press
   ↓
@@ -167,12 +170,22 @@ Firmware detects press (GPIO9)
   ↓
 5-second countdown with pulsing LED
   ↓
-HTTP POST to /api/destroy
+HTTP POST to Gateway (nginx :8080)
+  ↓
+Nginx proxies to Backend (:4000)
   ↓
 Backend stores event in memory
   ↓
-Admin dashboard auto-refreshes every 5s
+Admin dashboard auto-refreshes every 5s (HTTPS :443)
 ```
+
+**Why HTTP Gateway?**
+- ESP32 uses simple HTTP (no TLS overhead, ~50 KB memory saved)
+- No dependency conflicts with embedded TLS libraries
+- Public access via HTTPS remains secure (nginx handles TLS)
+- Reliable and easy to debug
+
+See `nginx/HTTP-GATEWAY-SETUP.md` for setup instructions.
 
 ### Firmware State Machine
 

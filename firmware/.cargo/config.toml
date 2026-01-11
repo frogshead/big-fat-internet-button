@@ -6,7 +6,7 @@ ESP_LOG="info"
 # WiFi Configuration (update with your values)
 WIFI_SSID="ssid"
 WIFI_PASSWORD="top-secret"
-BACKEND_URL="https://arewegoneyet.xn--viitamki-5za.fi/api/destroy"
+BACKEND_URL="YOUR_SERVER_IP:8080"
 
 [build]
 rustflags = [
