@@ -13,7 +13,7 @@ This guide will help you set up the Big Red Button backend behind an nginx rever
 
 ## Domain Note
 
-The domain `viitamäki.fi` contains international characters (IDN - Internationalized Domain Name). The Punycode representation is `xn--viitmki-0za.fi`. The nginx configuration uses Punycode, but you can use the regular domain name in browser URLs.
+The domain `viitamäki.fi` contains international characters (IDN - Internationalized Domain Name). The Punycode representation is `xn--viitamki-5za.fi`. The nginx configuration uses Punycode, but you can use the regular domain name in browser URLs.
 
 ## Step 1: Install Required Software
 
@@ -109,7 +109,7 @@ Comment out the entire HTTPS server block (lines starting with `server { listen 
 server {
     listen 80;
     listen [::]:80;
-    server_name arewegoneyet.xn--viitmki-0za.fi;
+    server_name arewegoneyet.xn--viitamki-5za.fi;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -152,7 +152,7 @@ sudo certbot certonly \
 sudo certbot certonly \
   --webroot \
   --webroot-path=/var/www/certbot \
-  -d arewegoneyet.xn--viitmki-0za.fi \
+  -d arewegoneyet.xn--viitamki-5za.fi \
   --email your-email@example.com \
   --agree-tos \
   --no-eff-email
@@ -268,7 +268,7 @@ curl http://localhost:4000/
 ```bash
 # Convert domain to Punycode manually
 python3 -c "print('arewegoneyet.viitamäki.fi'.encode('idna').decode('ascii'))"
-# Output: arewegoneyet.xn--viitmki-0za.fi
+# Output: arewegoneyet.xn--viitamki-5za.fi
 ```
 
 ### Certificate renewal fails
