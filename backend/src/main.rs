@@ -117,44 +117,188 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn index_handler() -> Html<&'static str> {
-    Html(
-        r#"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Big Red Internet Button</title>
-            <style>
-                body {
-                    background: #000;
-                    color: #0f0;
-                    font-family: 'Courier New', monospace;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    height: 100vh;
-                    margin: 0;
-                }
-                .container {
-                    text-align: center;
-                }
-                h1 {
-                    font-size: 3em;
-                    text-shadow: 0 0 10px #0f0;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>🚀 BIG RED INTERNET BUTTON 🚀</h1>
-                <p>Nuclear Destruction Simulator Backend</p>
-                <p>Status: OPERATIONAL</p>
-                <p><a href="/admin" style="color: #0f0;">Admin Panel</a></p>
-            </div>
-        </body>
-        </html>
-        "#,
-    )
+async fn index_handler(State(state): State<AppState>) -> Html<String> {
+    let events = state.lock().unwrap();
+    let is_destroyed = !events.is_empty();
+
+    if is_destroyed {
+        // World has been destroyed - show Finnish lyrics
+        Html(
+            r#"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Olemme tuhoutuneet</title>
+                <meta charset="utf-8">
+                <style>
+                    body {
+                        background: linear-gradient(135deg, #1a0000 0%, #000000 100%);
+                        color: #ff6666;
+                        font-family: 'Courier New', monospace;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 100vh;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    .container {
+                        max-width: 800px;
+                        text-align: center;
+                    }
+                    h1 {
+                        font-size: 2.5em;
+                        color: #ff3333;
+                        text-shadow: 0 0 20px #ff0000;
+                        margin-bottom: 40px;
+                        animation: glow 2s ease-in-out infinite alternate;
+                    }
+                    @keyframes glow {
+                        from { text-shadow: 0 0 20px #ff0000; }
+                        to { text-shadow: 0 0 30px #ff0000, 0 0 40px #ff0000; }
+                    }
+                    .lyrics {
+                        font-size: 1.1em;
+                        line-height: 1.8;
+                        color: #ff8888;
+                        white-space: pre-line;
+                        text-align: left;
+                        background: rgba(0, 0, 0, 0.5);
+                        padding: 30px;
+                        border-radius: 10px;
+                        border: 2px solid #ff3333;
+                    }
+                    .chorus {
+                        font-style: italic;
+                        color: #ffaaaa;
+                        margin: 20px 0;
+                    }
+                    .credit {
+                        margin-top: 30px;
+                        font-size: 0.9em;
+                        color: #666;
+                    }
+                    a {
+                        color: #ff6666;
+                        text-decoration: none;
+                    }
+                    a:hover {
+                        color: #ff3333;
+                        text-shadow: 0 0 10px #ff0000;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>💀 Maailma on tuhoutunut 💀</h1>
+                    <div class="lyrics">
+Isä seisoo rannalla, ja ase kourassa myrskyä odottaa
+Äiti painaa pikkusiskon syliin, kun taivas oudosti iltaisin punertaa
+Veljestä kuulin viimeksi kun tuli kirje vierailta mailta
+Kertoi voivansa hyvin, mutta sanoi että tilanne näyttää täällä myös pirun pahalta
+
+<span class="chorus">Tää on kymmenen tikkua laudalla
+Me ollaan piilossa viimeisellä rannalla
+Eikä kukaan meitä enää etsi, tää on tyhjä ja loputon leikki
+Ja vain tuuli kuiskaa: "kaikki pois piilostaan"</span>
+
+Setä on jotenkin sekaisin, se istuu liiterissä ja itkee ja nauraa
+Syyttä välillä saatanaa ja jumalaa ja sanoo: "nyt meitä syntisiä rangaistaan"
+Naapurissa on oudon hiljaista, on verhot olleet kiinni jo viikon
+Isä kielsi käymästä siellä, sanoi: "tehneet mitä tehneet, se niiden asia on, oma asia on"
+
+<span class="chorus">Tää on kymmenen tikkua laudalla...</span>
+
+Minä olen vasta seitsemän mutta silti mä jotain jo ymmärrän
+Kun tv on mykkä ja radiossa kuulin uutisten lukijan itkevän
+Ne puhuu jostain pilvestä joka matkalla on vielä tänne päin
+Pikkusisko kysyi: "montako päivää jouluun?"
+Ja isän silmiään pyyhkivän näin, silmiään pyyhkivän näin
+
+<span class="chorus">Tää on kymmenen tikkua laudalla...</span>
+                    </div>
+                    <p class="credit">
+                        "Autiolla rannalla" - Sir Elwoodin Hiljaiset Värit<br>
+                        <a href="/admin">Admin Panel</a>
+                    </p>
+                </div>
+            </body>
+            </html>
+            "#.to_string(),
+        )
+    } else {
+        // World is safe - show sunny day
+        Html(
+            r#"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Kaikki on hyvin</title>
+                <meta charset="utf-8">
+                <style>
+                    body {
+                        background: linear-gradient(135deg, #87CEEB 0%, #98D8E8 100%);
+                        color: #333;
+                        font-family: 'Courier New', monospace;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                    }
+                    .container {
+                        text-align: center;
+                        background: rgba(255, 255, 255, 0.9);
+                        padding: 40px;
+                        border-radius: 20px;
+                        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+                    }
+                    h1 {
+                        font-size: 3em;
+                        color: #FFD700;
+                        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+                        margin-bottom: 20px;
+                    }
+                    .message {
+                        font-size: 1.5em;
+                        color: #2E8B57;
+                        margin-bottom: 30px;
+                    }
+                    img {
+                        max-width: 500px;
+                        width: 100%;
+                        border-radius: 10px;
+                        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+                    }
+                    a {
+                        display: inline-block;
+                        margin-top: 20px;
+                        padding: 10px 20px;
+                        background: #4CAF50;
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 5px;
+                        transition: all 0.3s;
+                    }
+                    a:hover {
+                        background: #45a049;
+                        transform: scale(1.05);
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>☀️ Kaikki on hyvin! ☀️</h1>
+                    <p class="message">Maailma on turvassa... toistaiseksi.</p>
+                    <img src="https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3ajE2MG9tN2VtamtlN3d0ZWRhNDIyY3h5OHNwbHg2eXgxdmEyN2M2NiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/3ohs4qoyjBWFKxk688/giphy.gif" alt="Sunny day">
+                    <br>
+                    <a href="/admin">Admin Panel</a>
+                </div>
+            </body>
+            </html>
+            "#.to_string(),
+        )
+    }
 }
 
 async fn button_press_handler(
