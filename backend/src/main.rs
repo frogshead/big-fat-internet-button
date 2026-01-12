@@ -224,7 +224,8 @@ Ja isän silmiään pyyhkivän näin, silmiään pyyhkivän näin
                 </div>
             </body>
             </html>
-            "#.to_string(),
+            "#
+            .to_string(),
         )
     } else {
         // World is safe - show sunny day
